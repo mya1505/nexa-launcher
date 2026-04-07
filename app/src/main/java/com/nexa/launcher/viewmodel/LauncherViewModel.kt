@@ -37,17 +37,30 @@ class LauncherViewModel @Inject constructor(
     private val _messages = MutableSharedFlow<String>()
     val messages = _messages.asSharedFlow()
 
-    val uiState: StateFlow<LauncherUiState> = combine(
-        installedApps,
-        repository.appPreferencesFlow,
-        repository.settingsFlow,
+    private val uiFlags = combine(
         drawerQuery,
         drawerOpen,
         quickSearchOpen,
         editMode,
         currentScreen,
         loading
-    ) { apps, preferences, settings, query, drawer, quickSearch, isEditMode, screen, isLoading ->
+    ) { query, drawer, quickSearch, isEditMode, screen, isLoading ->
+        UiFlags(
+            query = query,
+            drawerOpen = drawer,
+            quickSearchOpen = quickSearch,
+            editMode = isEditMode,
+            screen = screen,
+            isLoading = isLoading
+        )
+    }
+
+    val uiState: StateFlow<LauncherUiState> = combine(
+        installedApps,
+        repository.appPreferencesFlow,
+        repository.settingsFlow,
+        uiFlags
+    ) { apps, preferences, settings, flags ->
         val decoratedApps = decorate(apps, preferences)
 
         val visibleApps = decoratedApps.filterNot { it.isHidden }
@@ -60,10 +73,10 @@ class LauncherViewModel @Inject constructor(
         val homeApps = sortedByUsage.take(maxHomeItems)
 
         val baseDrawerApps = visibleApps.sortedBy { it.app.label.lowercase() }
-        val filteredDrawerApps = if (query.isBlank()) {
+        val filteredDrawerApps = if (flags.query.isBlank()) {
             baseDrawerApps
         } else {
-            baseDrawerApps.filter { it.app.label.contains(query, ignoreCase = true) }
+            baseDrawerApps.filter { it.app.label.contains(flags.query, ignoreCase = true) }
         }
         val drawerApps = filteredDrawerApps.sortedWith(
             compareByDescending<AppUiModel> { it.isFavorite }
@@ -75,16 +88,16 @@ class LauncherViewModel @Inject constructor(
             .take(8)
 
         LauncherUiState(
-            isLoading = isLoading,
+            isLoading = flags.isLoading,
             homeApps = homeApps,
             drawerApps = drawerApps,
             recentApps = recentApps,
             hiddenApps = decoratedApps.filter { it.isHidden },
-            drawerQuery = query,
-            drawerOpen = drawer,
-            quickSearchOpen = quickSearch,
-            editMode = isEditMode,
-            currentScreen = screen,
+            drawerQuery = flags.query,
+            drawerOpen = flags.drawerOpen,
+            quickSearchOpen = flags.quickSearchOpen,
+            editMode = flags.editMode,
+            currentScreen = flags.screen,
             settings = settings
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), LauncherUiState())
@@ -233,4 +246,13 @@ class LauncherViewModel @Inject constructor(
             )
         }
     }
+
+    private data class UiFlags(
+        val query: String,
+        val drawerOpen: Boolean,
+        val quickSearchOpen: Boolean,
+        val editMode: Boolean,
+        val screen: LauncherScreen,
+        val isLoading: Boolean
+    )
 }
