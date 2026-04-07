@@ -37,18 +37,24 @@ class LauncherViewModel @Inject constructor(
     private val _messages = MutableSharedFlow<String>()
     val messages = _messages.asSharedFlow()
 
-    private val uiFlags = combine(
+    private val drawerFlags = combine(
         drawerQuery,
         drawerOpen,
-        quickSearchOpen,
+        quickSearchOpen
+    ) { query, drawer, quickSearch ->
+        Triple(query, drawer, quickSearch)
+    }
+
+    private val uiFlags = combine(
+        drawerFlags,
         editMode,
         currentScreen,
         loading
-    ) { query, drawer, quickSearch, isEditMode, screen, isLoading ->
+    ) { drawerState, isEditMode, screen, isLoading ->
         UiFlags(
-            query = query,
-            drawerOpen = drawer,
-            quickSearchOpen = quickSearch,
+            query = drawerState.first,
+            drawerOpen = drawerState.second,
+            quickSearchOpen = drawerState.third,
             editMode = isEditMode,
             screen = screen,
             isLoading = isLoading
