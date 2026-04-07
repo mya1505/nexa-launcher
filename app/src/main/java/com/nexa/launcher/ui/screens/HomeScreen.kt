@@ -19,8 +19,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
@@ -35,6 +35,8 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -47,6 +49,10 @@ import com.nexa.launcher.ui.components.AppIconItem
 import com.nexa.launcher.ui.components.WidgetHostCard
 import com.nexa.launcher.viewmodel.AppUiModel
 import com.nexa.launcher.viewmodel.LauncherUiState
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import java.util.Locale
+import kotlinx.coroutines.delay
 
 @Composable
 fun HomeScreen(
@@ -69,10 +75,21 @@ fun HomeScreen(
 ) {
     val gradient = Brush.verticalGradient(
         colors = listOf(
+            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.65f),
             MaterialTheme.colorScheme.background,
-            MaterialTheme.colorScheme.surface
+            MaterialTheme.colorScheme.background
         )
     )
+    val iconSize = state.settings.iconSizeDp.dp
+    val clockText by rememberClock("HH:mm")
+    val dateText by rememberClock("EEEE, d MMMM")
+
+    val dockApps = state.homeApps.takeLast(minOf(5, state.homeApps.size))
+    val gridApps = if (state.homeApps.size > dockApps.size) {
+        state.homeApps.dropLast(dockApps.size)
+    } else {
+        state.homeApps
+    }
 
     Box(
         modifier = Modifier
@@ -102,28 +119,27 @@ fun HomeScreen(
                 )
             }
     ) {
-        val iconSize = state.settings.iconSizeDp.dp
-
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 24.dp),
+            contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 24.dp, bottom = 140.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.Top
                 ) {
                     Column {
                         Text(
-                            text = "Nexa Launcher",
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold
+                            text = clockText,
+                            style = MaterialTheme.typography.headlineLarge,
+                            color = MaterialTheme.colorScheme.onBackground
                         )
                         Text(
-                            text = "Swipe up for drawer • Swipe down for quick search",
-                            style = MaterialTheme.typography.labelMedium
+                            text = dateText,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.76f)
                         )
                     }
                     IconButton(onClick = onOpenSettings) {
@@ -133,33 +149,46 @@ fun HomeScreen(
             }
 
             item {
-                AnimatedVisibility(visible = state.editMode) {
-                    Card(
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
-                        )
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(24.dp),
+                    color = MaterialTheme.colorScheme.surface
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 14.dp, vertical = 12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = "Edit mode active: tap star to favorite, eye to hide, and add/remove widget",
-                            modifier = Modifier.padding(12.dp),
-                            style = MaterialTheme.typography.bodyMedium
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Search, contentDescription = null)
+                            Text(
+                                text = "Finder",
+                                modifier = Modifier.padding(start = 8.dp),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                        FilledTonalButton(onClick = onOpenQuickSearch) {
+                            Text("Open")
+                        }
                     }
                 }
             }
 
             item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    FilledTonalButton(onClick = onOpenDrawer, modifier = Modifier.weight(1f)) {
-                        Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Text(text = "App Drawer", modifier = Modifier.padding(start = 8.dp))
-                    }
-                    FilledTonalButton(onClick = onOpenQuickSearch, modifier = Modifier.weight(1f)) {
-                        Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Text(text = "Quick Search", modifier = Modifier.padding(start = 8.dp))
+                AnimatedVisibility(visible = state.editMode) {
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant
+                        ),
+                        shape = RoundedCornerShape(20.dp)
+                    ) {
+                        Text(
+                            text = "Edit mode: long press app to manage favorite/hide, double tap to lock screen",
+                            modifier = Modifier.padding(14.dp),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
                     }
                 }
             }
@@ -190,7 +219,6 @@ fun HomeScreen(
                 item {
                     FilledTonalButton(onClick = onAddWidget, modifier = Modifier.fillMaxWidth()) {
                         Icon(Icons.Default.Widgets, contentDescription = null)
-                        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.padding(start = 4.dp))
                         Text(text = "Add widget", modifier = Modifier.padding(start = 8.dp))
                     }
                 }
@@ -198,7 +226,11 @@ fun HomeScreen(
 
             if (state.recentApps.isNotEmpty()) {
                 item {
-                    Text(text = "Recent Apps", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        text = "Suggested apps",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
                 }
                 item {
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -218,11 +250,7 @@ fun HomeScreen(
                 }
             }
 
-            item {
-                Text(text = "Home", style = MaterialTheme.typography.titleMedium)
-            }
-
-            val rows = state.homeApps.chunked(state.settings.gridColumns)
+            val rows = gridApps.chunked(state.settings.gridColumns)
             items(rows.size) { rowIndex ->
                 val rowApps = rows[rowIndex]
                 Row(
@@ -248,7 +276,42 @@ fun HomeScreen(
                     }
                 }
             }
-            item { Box(modifier = Modifier.height(56.dp)) }
+
+            item { Box(modifier = Modifier.height(24.dp)) }
+        }
+
+        if (dockApps.isNotEmpty()) {
+            Surface(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp, vertical = 18.dp),
+                shape = RoundedCornerShape(34.dp),
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
+                tonalElevation = 6.dp,
+                shadowElevation = 18.dp
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    dockApps.forEach { app ->
+                        AppIconItem(
+                            app = app,
+                            iconSize = iconSize,
+                            showLabel = false,
+                            editMode = false,
+                            onClick = { onLaunchApp(app) },
+                            onLongClick = onToggleEditMode,
+                            onToggleFavorite = { onToggleFavorite(app) },
+                            onToggleHidden = { onToggleHidden(app) }
+                        )
+                    }
+                }
+            }
         }
 
         if (state.quickSearchOpen) {
@@ -256,13 +319,13 @@ fun HomeScreen(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 22.dp),
-                shape = MaterialTheme.shapes.large,
+                    .padding(horizontal = 14.dp, vertical = 18.dp),
+                shape = RoundedCornerShape(24.dp),
                 tonalElevation = 8.dp,
-                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.97f)
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.98f)
             ) {
                 Column(
-                    modifier = Modifier.padding(12.dp),
+                    modifier = Modifier.padding(14.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Row(
@@ -280,13 +343,13 @@ fun HomeScreen(
                         onValueChange = onSetQuery,
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
+                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                         label = { Text("Search app") }
                     )
                     state.drawerApps.take(8).forEach { app ->
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .background(Color.Transparent)
                                 .padding(vertical = 4.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
@@ -317,4 +380,18 @@ fun HomeScreen(
             onHide = onToggleHidden
         )
     }
+}
+
+@Composable
+private fun rememberClock(pattern: String): androidx.compose.runtime.State<String> {
+    return produceState(initialValue = formattedTime(pattern)) {
+        while (true) {
+            value = formattedTime(pattern)
+            delay(1000L)
+        }
+    }
+}
+
+private fun formattedTime(pattern: String): String {
+    return LocalDateTime.now().format(DateTimeFormatter.ofPattern(pattern, Locale.getDefault()))
 }

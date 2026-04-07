@@ -11,7 +11,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
@@ -49,6 +49,7 @@ fun AppIconItem(
     modifier: Modifier = Modifier
 ) {
     val bitmap = remember(app.app.icon) { app.app.icon.toBitmap().asImageBitmap() }
+    val iconShape = RoundedCornerShape((iconSize.value * 0.36f).dp)
 
     Column(
         modifier = modifier
@@ -69,10 +70,10 @@ fun AppIconItem(
                 contentDescription = app.app.label,
                 modifier = Modifier
                     .size(iconSize)
-                    .clip(CircleShape)
+                    .clip(iconShape)
                     .graphicsLayer {
-                        shadowElevation = 6f
-                        shape = CircleShape
+                        shadowElevation = 8f
+                        shape = iconShape
                         clip = true
                     },
                 contentScale = ContentScale.Crop
@@ -94,7 +95,7 @@ fun AppIconItem(
                 text = app.app.label,
                 style = MaterialTheme.typography.labelMedium,
                 textAlign = TextAlign.Center,
-                maxLines = 2,
+                maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.fillMaxWidth()
             )

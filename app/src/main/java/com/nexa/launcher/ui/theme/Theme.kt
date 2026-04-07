@@ -5,24 +5,27 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 import com.nexa.launcher.domain.model.ThemeMode
 
 private val LightColors = lightColorScheme(
     primary = NexaBlue,
-    secondary = NexaPurple,
+    secondary = NexaSky,
     background = NexaSurfaceLight,
-    surface = androidx.compose.ui.graphics.Color.White,
-    onPrimary = androidx.compose.ui.graphics.Color.White,
+    surface = NexaCardLight,
+    surfaceVariant = NexaBlueSoft,
+    onPrimary = Color.White,
     onBackground = NexaTextDark,
     onSurface = NexaTextDark
 )
 
 private val DarkColors = darkColorScheme(
     primary = NexaBlue,
-    secondary = NexaPurple,
+    secondary = NexaSky,
     background = NexaSurfaceDark,
-    surface = androidx.compose.ui.graphics.Color(0xFF172036),
-    onPrimary = androidx.compose.ui.graphics.Color.White,
+    surface = NexaCardDark,
+    surfaceVariant = Color(0xFF22324D),
+    onPrimary = Color.White,
     onBackground = NexaTextLight,
     onSurface = NexaTextLight
 )

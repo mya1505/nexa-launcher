@@ -3,10 +3,12 @@
 /.idea/
 .DS_Store
 /build/
+**/build/
 /captures/
 .externalNativeBuild/
 .cxx/
 *.iml
 *.jks
 *.keystore
+keystore/signing.local.env
 app/release/

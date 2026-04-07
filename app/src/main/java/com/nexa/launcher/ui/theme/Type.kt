@@ -10,28 +10,34 @@ private val InterLike = FontFamily.SansSerif
 private val RobotoLike = FontFamily.Default
 
 val NexaTypography = Typography(
+    headlineLarge = TextStyle(
+        fontFamily = InterLike,
+        fontWeight = FontWeight.Bold,
+        fontSize = 56.sp,
+        lineHeight = 56.sp
+    ),
     headlineSmall = TextStyle(
         fontFamily = InterLike,
         fontWeight = FontWeight.SemiBold,
-        fontSize = 24.sp,
-        lineHeight = 28.sp
+        fontSize = 30.sp,
+        lineHeight = 34.sp
     ),
     titleMedium = TextStyle(
         fontFamily = InterLike,
         fontWeight = FontWeight.Medium,
-        fontSize = 16.sp,
-        lineHeight = 20.sp
+        fontSize = 18.sp,
+        lineHeight = 22.sp
     ),
     bodyMedium = TextStyle(
         fontFamily = RobotoLike,
         fontWeight = FontWeight.Normal,
-        fontSize = 14.sp,
-        lineHeight = 18.sp
+        fontSize = 15.sp,
+        lineHeight = 20.sp
     ),
     labelMedium = TextStyle(
         fontFamily = RobotoLike,
         fontWeight = FontWeight.Medium,
-        fontSize = 12.sp,
+        fontSize = 13.sp,
         lineHeight = 16.sp
     )
 )
