@@ -16,9 +16,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -40,7 +44,6 @@ import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -53,6 +56,7 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlinx.coroutines.delay
+import kotlin.math.max
 
 @Composable
 fun HomeScreen(
@@ -75,7 +79,7 @@ fun HomeScreen(
 ) {
     val gradient = Brush.verticalGradient(
         colors = listOf(
-            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.65f),
+            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
             MaterialTheme.colorScheme.background,
             MaterialTheme.colorScheme.background
         )
@@ -90,6 +94,15 @@ fun HomeScreen(
     } else {
         state.homeApps
     }
+
+    val rowSlots = max(1, state.settings.gridRows - 1)
+    val pageCapacity = max(1, state.settings.gridColumns * rowSlots)
+    val pagedApps = if (gridApps.isEmpty()) {
+        listOf(emptyList())
+    } else {
+        gridApps.chunked(pageCapacity)
+    }
+    val pagerState = rememberPagerState(initialPage = 0, pageCount = { pagedApps.size })
 
     Box(
         modifier = Modifier
@@ -250,27 +263,67 @@ fun HomeScreen(
                 }
             }
 
-            val rows = gridApps.chunked(state.settings.gridColumns)
-            items(rows.size) { rowIndex ->
-                val rowApps = rows[rowIndex]
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    repeat(state.settings.gridColumns) { colIndex ->
-                        val app = rowApps.getOrNull(colIndex)
-                        if (app == null) {
-                            Box(modifier = Modifier.size(iconSize + 24.dp))
-                        } else {
-                            AppIconItem(
-                                app = app,
-                                iconSize = iconSize,
-                                showLabel = state.settings.showLabels,
-                                editMode = state.editMode,
-                                onClick = { onLaunchApp(app) },
-                                onLongClick = onToggleEditMode,
-                                onToggleFavorite = { onToggleFavorite(app) },
-                                onToggleHidden = { onToggleHidden(app) }
+            item {
+                HorizontalPager(
+                    state = pagerState,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height((iconSize + 40.dp) * rowSlots),
+                    pageSpacing = 12.dp
+                ) { pageIndex ->
+                    val pageRows = pagedApps[pageIndex].chunked(state.settings.gridColumns)
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        repeat(rowSlots) { rowIndex ->
+                            val rowApps = pageRows.getOrNull(rowIndex).orEmpty()
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                repeat(state.settings.gridColumns) { colIndex ->
+                                    val app = rowApps.getOrNull(colIndex)
+                                    if (app == null) {
+                                        Box(modifier = Modifier.size(iconSize + 20.dp))
+                                    } else {
+                                        AppIconItem(
+                                            app = app,
+                                            iconSize = iconSize,
+                                            showLabel = state.settings.showLabels,
+                                            editMode = state.editMode,
+                                            onClick = { onLaunchApp(app) },
+                                            onLongClick = onToggleEditMode,
+                                            onToggleFavorite = { onToggleFavorite(app) },
+                                            onToggleHidden = { onToggleHidden(app) }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (pagedApps.size > 1) {
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        repeat(pagedApps.size) { index ->
+                            val isActive = pagerState.currentPage == index
+                            Box(
+                                modifier = Modifier
+                                    .padding(horizontal = 4.dp)
+                                    .size(if (isActive) 10.dp else 8.dp)
+                                    .background(
+                                        color = if (isActive) {
+                                            MaterialTheme.colorScheme.onBackground
+                                        } else {
+                                            MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f)
+                                        },
+                                        shape = CircleShape
+                                    )
                             )
                         }
                     }
@@ -373,6 +426,7 @@ fun HomeScreen(
         AppDrawerSheet(
             apps = state.drawerApps,
             query = state.drawerQuery,
+            iconSize = (iconSize * 0.88f),
             onQueryChange = onSetQuery,
             onDismiss = onCloseDrawer,
             onLaunchApp = onLaunchApp,
