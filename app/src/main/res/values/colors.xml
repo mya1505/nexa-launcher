@@ -1,0 +1,8 @@
+<resources>
+    <color name="nexa_blue">#3D7CFF</color>
+    <color name="nexa_purple">#7D4BFF</color>
+    <color name="nexa_bg_light">#F3F6FF</color>
+    <color name="nexa_bg_dark">#0D1324</color>
+    <color name="nexa_text_light">#0F172A</color>
+    <color name="nexa_text_dark">#E2E8F0</color>
+</resources>
